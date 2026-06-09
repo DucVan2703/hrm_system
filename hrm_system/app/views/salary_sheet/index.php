@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bảng lương - Đại Học Thành Đông</title>
+<link rel="stylesheet" href="<?= Helper::asset('css/style.css') ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+@media print {
+  .no-print { display:none!important; }
+  .main-content { margin-left:0!important; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="no-print">
+    <?php 
+    $current_page = 'salary-sheet';
+    require __DIR__ . '/../layouts/sidebar.php'; 
+    ?>
+  </div>
+  <div class="main-content">
+    <div class="no-print"><?php require __DIR__ . '/../layouts/header.php'; ?></div>
+    <div class="page-content">
+      <div class="page-header no-print">
+        <div><h1>Bảng lương cán bộ giảng viên</h1><p>Xem và in bảng lương toàn trường</p></div>
+        <div class="page-actions">
+          <button class="btn btn-warning" onclick="window.print()"><i class="fas fa-print"></i> In bảng lương</button>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="card no-print" style="margin-bottom:16px;">
+        <div class="card-body" style="padding:14px 20px;">
+          <form method="GET" style="display:flex;gap:8px;align-items:center;">
+            <select name="thang" class="filter-input">
+              <?php foreach ($months as $m): ?><option value="<?= $m ?>" <?= $m==$thang?'selected':'' ?>>Tháng <?= $m ?></option><?php endforeach; ?>
+            </select>
+            <select name="nam" class="filter-input">
+              <?php foreach ($years as $y): ?><option value="<?= $y ?>" <?= $y==$nam?'selected':'' ?>><?= $y ?></option><?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Xem</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- In đầu trang -->
+      <div style="text-align:center;margin-bottom:16px;display:none;" class="print-header">
+        <h2 style="font-size:18px;font-weight:800;">ĐẠI HỌC THÀNH ĐÔNG</h2>
+        <h3 style="font-size:15px;font-weight:700;margin-top:4px;">BẢNG LƯƠNG CÁN BỘ GIẢNG VIÊN THÁNG <?= $thang ?>/<?= $nam ?></h3>
+      </div>
+      <style>.print-header { display:none; } @media print { .print-header { display:block!important; } }</style>
+
+      <!-- Stats -->
+      <div class="stats-grid no-print" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+        <div class="stat-card primary">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-info"><div class="stat-value"><?= count($list) ?></div><div class="stat-label">Nhân viên</div></div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+          <div class="stat-info"><div class="stat-value" style="font-size:16px;"><?= Helper::formatMoney($tongQuyLuong) ?></div><div class="stat-label">Tổng thực lĩnh</div></div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-info"><div class="stat-value"><?= count(array_filter($list, function($r) { return $r['trang_thai']==='Đã duyệt' || $r['trang_thai']==='Đã thanh toán'; })) ?></div><div class="stat-label">Đã duyệt</div></div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-icon"><i class="fas fa-clock"></i></div>
+          <div class="stat-info"><div class="stat-value"><?= count(array_filter($list, function($r) { return $r['trang_thai']==='Nháp'; })) ?></div><div class="stat-label">Chờ duyệt</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="fas fa-file-invoice-dollar"></i> Bảng lương cán bộ giảng viên tháng <?= $thang ?>/<?= $nam ?></span>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="bangLuongTable" style="font-size:12px;">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã NV</th>
+                <th>Họ tên</th>
+                <th>Phòng ban</th>
+                <th>Ngày công</th>
+                <th>Lương cơ bản</th>
+                <th>Lương theo công</th>
+                <th>Phụ cấp</th>
+                <th>Thưởng</th>
+                <th>Khấu trừ</th>
+                <th>BHXH+BHYT</th>
+                <th>Thuế TNCN</th>
+                <th style="color:var(--success);">Thực lĩnh</th>
+                <th>Ký nhận</th>
+                <th class="no-print">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($list)): ?>
+              <tr><td colspan="15"><div class="empty-state"><i class="fas fa-file-invoice-dollar"></i><h3>Chưa có dữ liệu lương</h3><p>Vào trang Tính lương để tạo bảng lương</p></div></td></tr>
+              <?php else: $stt=1; foreach ($list as $row): ?>
+              <tr>
+                <td><?= $stt++ ?></td>
+                <td><?= Helper::clean($row['ma_nv']) ?></td>
+                <td><b><?= Helper::clean($row['ho_ten']) ?></b></td>
+                <td><?= Helper::clean($row['ten_pb'] ?? '—') ?></td>
+                <td style="text-align:center;"><?= $row['so_ngay_lam'] ?>/<?= $row['so_ngay_chuan'] ?></td>
+                <td><?= Helper::formatMoney($row['luong_co_ban']) ?></td>
+                <td><?= Helper::formatMoney($row['luong_theo_cong']) ?></td>
+                <td><?= Helper::formatMoney($row['phu_cap_an_trua'] + $row['phu_cap_xang_xe'] + $row['phu_cap_khac']) ?></td>
+                <td><?= Helper::formatMoney($row['thuong_kpi'] + $row['thuong_khac']) ?></td>
+                <td style="color:var(--danger);"><?= Helper::formatMoney($row['phat_di_muon'] + $row['khau_tru_khac']) ?></td>
+                <td style="color:var(--danger);"><?= Helper::formatMoney($row['bao_hiem_xa_hoi'] + $row['bao_hiem_y_te']) ?></td>
+                <td style="color:var(--danger);"><?= Helper::formatMoney($row['thue_tncn']) ?></td>
+                <td><b style="color:var(--success);"><?= Helper::formatMoney($row['thuc_linh']) ?></b></td>
+                <td style="text-align:center; min-width:100px;">
+                  <?php if ($row['chu_ky']): ?>
+                    <img src="<?= Helper::route($row['chu_ky']) ?>" style="max-height:40px; filter:contrast(1.1); mix-blend-mode:multiply;">
+                  <?php endif; ?>
+                </td>
+                <td class="no-print"><?= Helper::badgeTrangThaiLuong($row['trang_thai']) ?></td>
+              </tr>
+              <?php endforeach; endif; ?>
+            </tbody>
+            <tfoot>
+              <tr style="font-weight:800;background:rgba(79,70,229,.06);">
+                <td colspan="6" style="text-align:right;font-weight:800;">TỔNG CỘNG</td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'luong_theo_cong'))) ?></td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'phu_cap_an_trua'))+array_sum(array_column($list,'phu_cap_xang_xe'))+array_sum(array_column($list,'phu_cap_khac'))) ?></td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'thuong_kpi'))+array_sum(array_column($list,'thuong_khac'))) ?></td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'phat_di_muon'))+array_sum(array_column($list,'khau_tru_khac'))) ?></td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'bao_hiem_xa_hoi'))+array_sum(array_column($list,'bao_hiem_y_te'))) ?></td>
+                <td><?= Helper::formatMoney(array_sum(array_column($list,'thue_tncn'))) ?></td>
+                <td style="color:var(--success);font-size:14px;"><?= Helper::formatMoney($tongQuyLuong) ?></td>
+                <td></td>
+                <td class="no-print"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;" class="no-print">
+          <span style="font-size:13px;color:var(--gray);">Tổng quỹ lương: <b style="font-size:16px;color:var(--success);"><?= Helper::formatMoney($tongQuyLuong) ?></b></span>
+        </div>
+        <!-- Print footer -->
+        <div style="display:none;margin-top:40px;padding:0 20px;" class="print-footer">
+          <div style="display:grid;grid-template-columns: 1fr 1fr 1fr;text-align:center;">
+            <div>
+              <p style="font-weight:700;margin-bottom:60px;">Người lập bảng</p>
+              <p style="font-size:12px;color:#666;">(Ký, họ tên)</p>
+            </div>
+            <div>
+              <p style="font-weight:700;margin-bottom:60px;">Kế toán trưởng</p>
+              <p style="font-size:12px;color:#666;">(Ký, họ tên)</p>
+            </div>
+            <div>
+              <p style="font-weight:700;margin-bottom:60px;">Giám đốc</p>
+              <p style="font-size:12px;color:#666;">(Ký, đóng dấu)</p>
+            </div>
+          </div>
+        </div>
+        <style>@media print { .print-footer { display:block!important; } }</style>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="<?= Helper::asset('js/main.js') ?>"></script>
+</body>
+</html>

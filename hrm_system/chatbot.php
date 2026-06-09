@@ -84,9 +84,32 @@ elseif (strpos($message, 'nghỉ') !== false || strpos($message, 'phép') !== fa
 elseif (strpos($message, 'ai tạo ra') !== false || strpos($message, 'là ai') !== false) {
     $reply = "Tôi là **Trợ lý ảo TDU**, được phát triển để hỗ trợ cán bộ giảng viên Đại học Thành Đông quản lý công việc và lương thưởng một cách dễ dàng nhất!";
 }
-// Mặc định
+// Mặc định hoặc tìm kiếm trong chatbot_faq
 else {
-    $reply = $default_reply;
+    try {
+        $rules = $db->query("SELECT * FROM chatbot_faq ORDER BY id DESC")->fetchAll();
+        $matched_rule = null;
+        foreach ($rules as $rule) {
+            $keywords = array_map('trim', explode(',', $rule['keywords']));
+            foreach ($keywords as $kw) {
+                $kw_norm = mb_strtolower(trim($kw));
+                if ($kw_norm !== '' && strpos($message, $kw_norm) !== false) {
+                    $matched_rule = $rule;
+                    break 2;
+                }
+            }
+        }
+        if ($matched_rule) {
+            $reply = $matched_rule['reply'];
+            if (!empty($matched_rule['suggestions'])) {
+                $suggestions = array_map('trim', explode(',', $matched_rule['suggestions']));
+            }
+        } else {
+            $reply = $default_reply;
+        }
+    } catch (Throwable $faq_error) {
+        $reply = $default_reply;
+    }
 }
 
 echo json_encode([

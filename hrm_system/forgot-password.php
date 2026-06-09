@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlash('warning', 'Không tìm thấy tài khoản với email này!');
         }
-        header('Location: login.php'); exit();
+        header('Location: ' . Helper::route('auth/login')); exit();
     }
 }
 ?>
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quên mật khẩu - <?= APP_NAME ?></title>
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="<?= Helper::asset('css/style.css') ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e293b);">
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button type="submit" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-bottom:12px;">
       <i class="fas fa-paper-plane"></i> Gửi yêu cầu
     </button>
-    <a href="login.php" class="btn btn-outline btn-lg" style="width:100%;justify-content:center;">
+    <a href="<?= Helper::route('auth/login') ?>" class="btn btn-outline btn-lg" style="width:100%;justify-content:center;">
       <i class="fas fa-arrow-left"></i> Quay lại đăng nhập
     </a>
   </form>
