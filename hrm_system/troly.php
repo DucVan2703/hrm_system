@@ -190,6 +190,43 @@ try {
         reply_json($reply, ['👤 Hồ sơ của tôi', '💰 Lương tháng này']);
     }
 
+    if (contains_any($message, ['nghi phep', 'xin nghi', 'don phep', 'nghi', 'phep'])) {
+        $leave_status_msg = "";
+        if ($idNhanVien) {
+            // Lấy danh sách đơn xin nghỉ gần nhất của nhân viên
+            $stmt = $db->prepare("
+                SELECT *
+                FROM don_nghi_phep
+                WHERE id_nhan_vien = ?
+                ORDER BY id DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$idNhanVien]);
+            $last_leave = $stmt->fetch();
+
+            if ($last_leave) {
+                $status_label = $last_leave['trang_thai'];
+                $leave_status_msg = "\n\n📄 **Đơn xin nghỉ gần nhất của bạn:**"
+                    . "\n— Thời gian: **" . date('d/m/Y', strtotime($last_leave['ngay_bat_dau'])) . "** đến **" . date('d/m/Y', strtotime($last_leave['ngay_ket_thuc'])) . "**"
+                    . "\n— Số ngày nghỉ: **" . $last_leave['so_ngay'] . " ngày**"
+                    . "\n— Lý do: " . ($last_leave['ly_do'] ?: 'Không có')
+                    . "\n— Trạng thái duyệt: **" . $status_label . "**"
+                    . ($last_leave['ghi_chu_duyet'] ? "\n— Phản hồi từ Admin/HR: *\"" . $last_leave['ghi_chu_duyet'] . "\"*" : "");
+            }
+        }
+
+        $instructions = "🏖️ **HƯỚNG DẪN THỦ TỤC XIN NGHỈ PHÉP**\n\n"
+            . "1. Vào mục **Xin nghỉ phép** trên thanh Menu trái.\n"
+            . "2. Chọn **Tạo đơn mới**, điền khoảng ngày nghỉ (từ ngày - đến ngày) và lý do cụ thể.\n"
+            . "3. Nhấn nút **Gửi đơn**. Đơn sẽ tự động chuyển tới Quản trị viên/HR để duyệt trực tuyến.";
+
+        if (!$idNhanVien) {
+            $instructions .= "\n\n*Lưu ý: Bạn cần đăng nhập bằng tài khoản cán bộ nhân viên để gửi đơn nghỉ phép trực tuyến.*";
+        }
+
+        reply_json($instructions . $leave_status_msg, ['⏱️ Chấm công', '💰 Lương tháng này', '👤 Hồ sơ của tôi']);
+    }
+
     // Kiểm tra các luật phản hồi động từ CSDL (bảng chatbot_faq)
     try {
         $rules = $db->query("SELECT * FROM chatbot_faq ORDER BY id DESC")->fetchAll();
